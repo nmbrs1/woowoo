@@ -7,15 +7,26 @@
     body { font-family: sans-serif; background: #0b0b2a; color: white; padding: 2rem; }
     input, button { padding: 0.5rem; font-size: 1rem; }
     #jsonResult { background: #1e1e3f; padding: 0.5rem; margin-top: 1rem; font-family: monospace; white-space: pre-wrap; }
+    ul { list-style: none; padding: 0; }
+    li { margin-bottom: 0.5rem; }
   </style>
 </head>
 <body>
   <h1>Galaxy Wiki Finder</h1>
+
+  <!-- Search UI -->
   <input id="galaxyInput" placeholder="Enter galaxy name" />
   <button onclick="searchWiki()">Search</button>
-  <h2>Result:</h2>
+
+  <h2>Search Result:</h2>
   <p id="result"></p>
   <div id="jsonResult"></div>
+
+  <hr>
+
+  <!-- Saved entries -->
+  <h2>Saved Galaxies:</h2>
+  <ul id="galaxyList">Loading...</ul>
 
   <script>
     async function searchWiki() {
@@ -41,13 +52,31 @@
         const constellation = match ? match[1].trim() : "Unknown";
 
         resultBox.textContent = `${name} is in the constellation ${constellation}.`;
-
         jsonBox.textContent = `{"name": "${name}", "constellation": "${constellation}"}`;
       } catch (e) {
         resultBox.textContent = "Error: Unable to fetch data.";
         console.error(e);
       }
     }
+
+    async function loadGalaxies() {
+      try {
+        const res = await fetch('galaxies.json');
+        const galaxies = await res.json();
+        const list = document.getElementById("galaxyList");
+        list.innerHTML = "";
+        galaxies.forEach(g => {
+          const li = document.createElement("li");
+          li.textContent = `${g.name} — Constellation: ${g.constellation}`;
+          list.appendChild(li);
+        });
+      } catch (e) {
+        document.getElementById("galaxyList").textContent = "Failed to load galaxies.json.";
+        console.error(e);
+      }
+    }
+
+    loadGalaxies();
   </script>
 </body>
 </html>
