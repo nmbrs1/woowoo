@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Galaxy Info</title>
+  <style>
+    body { font-family: sans-serif; padding: 2rem; background: #0b0b2a; color: white; }
+    input, button { padding: 0.5rem; font-size: 1rem; }
+  </style>
+</head>
+<body>
+  <h1>Galaxy Constellation Finder</h1>
+  <input id="galaxyInput" placeholder="Enter galaxy name" />
+  <button onclick="fetchGalaxy()">Search</button>
+
+  <h2 id="galaxyName"></h2>
+  <p id="constellation"></p>
+
+  <script>
+    async function fetchGalaxy() {
+      const galaxy = document.getElementById("galaxyInput").value;
+      document.getElementById("galaxyName").innerText = galaxy;
+      document.getElementById("constellation").innerText = "Searching Wikipedia...";
+
+      try {
+        const response = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(galaxy)}`);
+        const data = await response.json();
+        const content = data.extract;
+
+        const match = content.match(/in the constellation ([A-Za-z\s]+)/i);
+        if (match) {
+          document.getElementById("constellation").innerText = `Constellation: ${match[1]}`;
+        } else {
+          document.getElementById("constellation").innerText = "Constellation not found in summary.";
+        }
+      } catch (error) {
+        document.getElementById("constellation").innerText = "Failed to fetch data.";
+      }
+    }
+  </script>
+</body>
+</html>
