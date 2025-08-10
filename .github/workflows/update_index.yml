@@ -1,0 +1,31 @@
+name: Generate File Index
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Run index generator
+        run: |
+          python3 scripts/make_index.py
+      - name: Commit generated data.json
+        uses: EndBug/add-and-commit@v9
+        with:
+          author_name: 'github-actions[bot]'
+          author_email: '41898282+github-actions[bot]@users.noreply.github.com'
+          message: 'chore: update data.json'
+          add: 'data.json'

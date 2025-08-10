@@ -1,82 +1,46 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Galaxy Wiki Finder</title>
-  <style>
-    body { font-family: sans-serif; background: #0b0b2a; color: white; padding: 2rem; }
-    input, button { padding: 0.5rem; font-size: 1rem; }
-    #jsonResult { background: #1e1e3f; padding: 0.5rem; margin-top: 1rem; font-family: monospace; white-space: pre-wrap; }
-    ul { list-style: none; padding: 0; }
-    li { margin-bottom: 0.5rem; }
-  </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Astro File Explorer</title>
+  <link rel="stylesheet" href="styles.css" />
+  <!-- JS9 CSS & JS (CDN) -->
+  <link rel="stylesheet" href="https://js9.si.edu/js9/css/js9.css" />
+  <script src="https://js9.si.edu/js9/js9min.js"></script>
 </head>
 <body>
-  <h1>Galaxy Wiki Finder</h1>
+  <header class="topbar">
+    <div class="title">Astro File Explorer</div>
+    <div class="info">Hosted: GitHub Pages — Place FITS under <code>/fits/</code></div>
+  </header>
 
-  <!-- Search UI -->
-  <input id="galaxyInput" placeholder="Enter galaxy name" />
-  <button onclick="searchWiki()">Search</button>
+  <main class="container">
+    <aside class="sidebar" id="sidebar">
+      <div class="folder-controls">
+        <button id="refreshBtn">Refresh list</button>
+        <input id="filterInput" placeholder="Filter folders..." />
+      </div>
+      <ul id="folders" class="folder-list" aria-label="Folders"></ul>
+    </aside>
 
-  <h2>Search Result:</h2>
-  <p id="result"></p>
-  <div id="jsonResult"></div>
+    <section class="content">
+      <div class="breadcrumb" id="breadcrumb">Home</div>
 
-  <hr>
+      <div class="files-area">
+        <ul id="files" class="file-list" aria-label="Files"></ul>
 
-  <!-- Saved entries -->
-  <h2>Saved Galaxies:</h2>
-  <ul id="galaxyList">Loading...</ul>
+        <div class="viewer-area">
+          <div id="viewerControls" class="viewer-controls">
+            <span id="fileInfo">No file loaded</span>
+          </div>
+          <!-- JS9 rendering element -->
+          <div id="JS9" class="JS9" style="width:100%; height:600px;"></div>
+        </div>
+      </div>
+    </section>
+  </main>
 
-  <script>
-    async function searchWiki() {
-      const name = document.getElementById("galaxyInput").value.trim();
-      const resultBox = document.getElementById("result");
-      const jsonBox = document.getElementById("jsonResult");
-
-      if (!name) {
-        resultBox.textContent = "Please enter a galaxy name.";
-        jsonBox.textContent = "";
-        return;
-      }
-
-      resultBox.textContent = "Searching Wikipedia...";
-      jsonBox.textContent = "";
-
-      try {
-        const response = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(name)}`);
-        const data = await response.json();
-        const extract = data.extract || "";
-
-        const match = extract.match(/in the constellation ([A-Za-z\s]+)/i);
-        const constellation = match ? match[1].trim() : "Unknown";
-
-        resultBox.textContent = `${name} is in the constellation ${constellation}.`;
-        jsonBox.textContent = `{"name": "${name}", "constellation": "${constellation}"}`;
-      } catch (e) {
-        resultBox.textContent = "Error: Unable to fetch data.";
-        console.error(e);
-      }
-    }
-
-    async function loadGalaxies() {
-      try {
-        const res = await fetch('galaxies.json');
-        const galaxies = await res.json();
-        const list = document.getElementById("galaxyList");
-        list.innerHTML = "";
-        galaxies.forEach(g => {
-          const li = document.createElement("li");
-          li.textContent = `${g.name} — Constellation: ${g.constellation}`;
-          list.appendChild(li);
-        });
-      } catch (e) {
-        document.getElementById("galaxyList").textContent = "Failed to load galaxies.json.";
-        console.error(e);
-      }
-    }
-
-    loadGalaxies();
-  </script>
+  <script src="app.js"></script>
 </body>
 </html>
