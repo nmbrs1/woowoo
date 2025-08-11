@@ -90,17 +90,44 @@ async function openFits(path, filename) {
   try {
     const response = await fetch(path);
     const buffer = await response.arrayBuffer();
-    const fits = new astro.FITS(buffer);
+    const fits = new FITS(buffer); // no astro. prefix
     const hdu = fits.getHDU();
-    const imageData = await hdu.toImage();
 
-    fitsCanvas.width = imageData.width;
-    fitsCanvas.height = imageData.height;
-    ctx.putImageData(imageData, 0, 0);
+    if (!hdu.isImage()) {
+      alert("This FITS file does not contain image data.");
+      return;
+    }
+
+    const image = hdu.data; // raw pixel array
+    const width = hdu.header.get('NAXIS1');
+    const height = hdu.header.get('NAXIS2');
+
+    // Find min and max for normalization
+    let min = Infinity, max = -Infinity;
+    for (let i = 0; i < image.length; i++) {
+      if (image[i] < min) min = image[i];
+      if (image[i] > max) max = image[i];
+    }
+    const scale = 255 / (max - min);
+
+    // Create ImageData for canvas
+    const imgData = ctx.createImageData(width, height);
+    for (let i = 0; i < image.length; i++) {
+      const val = Math.floor((image[i] - min) * scale);
+      imgData.data[i * 4 + 0] = val; // R
+      imgData.data[i * 4 + 1] = val; // G
+      imgData.data[i * 4 + 2] = val; // B
+      imgData.data[i * 4 + 3] = 255; // Alpha
+    }
+
+    fitsCanvas.width = width;
+    fitsCanvas.height = height;
+    ctx.putImageData(imgData, 0, 0);
   } catch (err) {
     console.error('Error loading FITS:', err);
     alert('Failed to load FITS file.');
   }
 }
+
 
 loadData();
