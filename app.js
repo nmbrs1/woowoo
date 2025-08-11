@@ -85,48 +85,22 @@ function renderFiles(files = []) {
   });
 }
 
-async function openFits(path, filename) {
+function openFits(path, filename) {
   fileInfoEl.textContent = filename;
-  try {
-    const response = await fetch(path);
-    const buffer = await response.arrayBuffer();
-    const fits = new FITS(buffer); // no astro. prefix
-    const hdu = fits.getHDU();
 
-    if (!hdu.isImage()) {
-      alert("This FITS file does not contain image data.");
-      return;
-    }
+  // Replace .fits extension with .jpg (or .png if you prefer)
+  const jpegPath = path.replace(/\.fits$/i, '.jpg');
 
-    const image = hdu.data; // raw pixel array
-    const width = hdu.header.get('NAXIS1');
-    const height = hdu.header.get('NAXIS2');
-
-    // Find min and max for normalization
-    let min = Infinity, max = -Infinity;
-    for (let i = 0; i < image.length; i++) {
-      if (image[i] < min) min = image[i];
-      if (image[i] > max) max = image[i];
-    }
-    const scale = 255 / (max - min);
-
-    // Create ImageData for canvas
-    const imgData = ctx.createImageData(width, height);
-    for (let i = 0; i < image.length; i++) {
-      const val = Math.floor((image[i] - min) * scale);
-      imgData.data[i * 4 + 0] = val; // R
-      imgData.data[i * 4 + 1] = val; // G
-      imgData.data[i * 4 + 2] = val; // B
-      imgData.data[i * 4 + 3] = 255; // Alpha
-    }
-
-    fitsCanvas.width = width;
-    fitsCanvas.height = height;
-    ctx.putImageData(imgData, 0, 0);
-  } catch (err) {
-    console.error('Error loading FITS:', err);
-    alert('Failed to load FITS file.');
-  }
+  const img = new Image();
+  img.onload = () => {
+    fitsCanvas.width = img.width;
+    fitsCanvas.height = img.height;
+    ctx.drawImage(img, 0, 0);
+  };
+  img.onerror = () => {
+    alert('JPEG preview not found for this FITS file.');
+  };
+  img.src = jpegPath;
 }
 
 
