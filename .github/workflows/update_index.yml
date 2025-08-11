@@ -1,34 +1,76 @@
-name: Generate File Index
+name: Build and Deploy
 
 on:
   push:
-    branches: [ main, master ]
-  workflow_dispatch: {}
+    branches:
+      - main
 
 permissions:
   contents: write
-  
+
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.11'
+          python-version: '3.x'
 
-      - name: Run index generator
+      - name: Install dependencies
         run: |
-          python3 scripts/make_index.py
-      - name: Commit generated data.json
-        uses: EndBug/add-and-commit@v9
+          python -m pip install --upgrade pip
+          pip install astropy pillow numpy
+
+      - name: Generate JPEG previews from FITS
+        run: |
+          mkdir -p previews
+          python <<'EOF'
+          import os
+          from astropy.io import fits
+          import numpy as np
+          from PIL import Image
+
+          fits_dir = "fits"
+          previews_dir = "previews"
+          os.makedirs(previews_dir, exist_ok=True)
+
+          for root, _, files in os.walk(fits_dir):
+              for file in files:
+                  if file.lower().endswith((".fit", ".fits")):
+                      fits_path = os.path.join(root, file)
+                      try:
+                          with fits.open(fits_path) as hdul:
+                              data = hdul[0].data
+                          if data is None:
+                              continue
+                          data = data.astype(float)
+                          data -= np.nanmin(data)
+                          if np.nanmax(data) != 0:
+                              data /= np.nanmax(data)
+                          data = (data * 255).astype(np.uint8)
+
+                          img = Image.fromarray(data)
+                          preview_name = os.path.splitext(file)[0] + ".jpg"
+                          preview_path = os.path.join(previews_dir, preview_name)
+                          img.save(preview_path, "JPEG", quality=85)
+                          print(f"Generated preview: {preview_path}")
+                      except Exception as e:
+                          print(f"Failed to process {fits_path}: {e}")
+          EOF
+
+      - name: Build site
+        run: |
+          # your build steps here
+          echo "Building site..."
+          # For example, if your site is pure static HTML, you might not need this
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
         with:
-          author_name: 'github-actions[bot]'
-          author_email: '41898282+github-actions[bot]@users.noreply.github.com'
-          message: 'chore: update data.json'
-          add: 'data.json'
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./ # Change to your build output folder if different
